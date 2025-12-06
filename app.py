@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify
 import csv
 import os
+import re
 
 app = Flask(__name__)
 
-def load_csv(path):
+def load_csv(path: str):
     rows = []
     headers = []
     with open(path, newline="", encoding="utf-8") as f:
@@ -28,9 +29,13 @@ DATA_REPORTS = load_csv(CSV_REPORTS)
 def score_row(blob: str, keywords: list[str]) -> int:
     return sum(1 for kw in keywords if kw and kw in blob)
 
+def parse_keywords(q: str) -> list[str]:
+    # Split on semicolon, comma, or any whitespace
+    parts = [p.strip() for p in re.split(r"[;,]\s*|\s+", q) if p.strip()]
+    return [p.lower() for p in parts]
+
 def run_search(dataset, q: str, limit: int):
-    raw_parts = [p.strip() for p in q.replace(",", " ").split()]
-    keywords = [p.lower() for p in raw_parts if p]
+    keywords = parse_keywords(q)
     scored = []
     for i, row in enumerate(dataset):
         s = score_row(row["__blob"], keywords)
